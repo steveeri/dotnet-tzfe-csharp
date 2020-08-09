@@ -1,0 +1,23 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tzfeTester", "tzfeTester\tzfeTester.csproj", "{00000A42-7A80-4F2E-94A9-C36B59811EA4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "tzfeGameEngine", "..\tzfeGameEngine\tzfeGameEngine.csproj", "{D62111EC-D71A-43CF-B75C-1731CFC62E68}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{00000A42-7A80-4F2E-94A9-C36B59811EA4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00000A42-7A80-4F2E-94A9-C36B59811EA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00000A42-7A80-4F2E-94A9-C36B59811EA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00000A42-7A80-4F2E-94A9-C36B59811EA4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D62111EC-D71A-43CF-B75C-1731CFC62E68}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D62111EC-D71A-43CF-B75C-1731CFC62E68}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D62111EC-D71A-43CF-B75C-1731CFC62E68}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D62111EC-D71A-43CF-B75C-1731CFC62E68}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
