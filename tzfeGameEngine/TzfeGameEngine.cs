@@ -76,16 +76,16 @@ namespace tzfeGameEngine {
         }
 
         // Reset the playing board, and generate rendering transition records
-        public void NewGame(int newHighScore) {
+        public void NewGame(int newHighScore = 0) {
             mPreviousHighScore = newHighScore;
             mNumEmpty = mGridCount;
             mMaxTile = mBlankTile;
             mGameOver = false;
             mScore = 0;
 
-            mPreviousMoves = new List<GameBoardRecord>();
-            mTransitions = new List<Transition>();
-            mTiles = new List<int>();
+            mPreviousMoves.Clear();
+            mTransitions.Clear();
+            mTiles.Clear();
 
             // Create clean array of tiles, and associated transitions
             for (int i = 0; i < mGridCount; i++) {
@@ -98,7 +98,7 @@ namespace tzfeGameEngine {
             AddNewTile(2);
             mPreviousMoves.Insert(0, GetGameBoardRecord());
             ApplyGameMoves();
-			mGameDelegate.MoveRequestOutcome(GameMoves.Rest, true);
+            mGameDelegate.MoveRequestOutcome(GameMoves.Rest, true);
         }
 
         // RePlot the game board to an earlier time.
@@ -265,8 +265,8 @@ namespace tzfeGameEngine {
 		// Does equivalent of Slide/Compact...(0,4,8,12), then Slide...(1,5,9,13) ...;
 		private bool ActionMoveLeft() {
 			var result = false;
+			int[] arr = new int[mDimension]; // reused
 			for (int i = 0; i < mDimension; i++) {
-				int[] arr = new int[mDimension];
 				for (int j = 0; j < mDimension; j++) arr[j] = i + j * mDimension;
 				result = SlideTileRowOrColumn(arr) || result;
 				result = CompactTileRowOrColumn(arr) || result;
@@ -278,8 +278,8 @@ namespace tzfeGameEngine {
 		// Does equivalent of Slide/Compact...(12,8,4,0), then Slide...(13,9,5,1) ...;
 		private bool ActionMoveRight() {
 			var result = false;
+			int[] arr = new int[mDimension]; // reused
 			for (int i = mGridCount-mDimension; i < mGridCount; i++) {
-				int[] arr = new int[mDimension];
 				for (int j = 0; j < mDimension; j++) arr[j] = i - j * mDimension;
 				result = SlideTileRowOrColumn(arr) || result;
 				result = CompactTileRowOrColumn(arr) || result;
@@ -291,9 +291,10 @@ namespace tzfeGameEngine {
 		// Does equivalent of Slide/Compact...(0,1,2,3), then Slide...(4,5,6,7) ...;
 		private bool ActionMoveUp() {
 			var result = false;
+			int[] arr = new int[mDimension]; // reused
 			for (int i = 0; i < mDimension; i++) {
-				int[] arr = new int[mDimension];
-				for (int j = 0; j < mDimension; j++) arr[j] = i * mDimension + j;
+				int startIdx = i * mDimension;
+				for (int j = 0; j < mDimension; j++) arr[j] = startIdx + j;
 				result = SlideTileRowOrColumn(arr) || result;
 				result = CompactTileRowOrColumn(arr) || result;
 				result = SlideTileRowOrColumn(arr) || result;
@@ -304,9 +305,9 @@ namespace tzfeGameEngine {
 		// Does equivalent of Slide/Compact...(3,2,1,0), then Slide...(7,6,5,4) ...;
 		private bool ActionMoveDown() {
 			var result = false;
+			int[] arr = new int[mDimension]; // reused
 			for (int i = 0; i < mDimension; i++) {
-				int startIdx = ((i+1) * mDimension) - 1;
-				int[] arr = new int[mDimension];
+			   int startIdx = ((i+1) * mDimension) - 1;
 				for (int j = 0; j < mDimension; j++) arr[j] = startIdx - j;
 				result = SlideTileRowOrColumn(arr) || result;
 				result = CompactTileRowOrColumn(arr) || result;

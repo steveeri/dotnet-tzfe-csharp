@@ -34,6 +34,9 @@ namespace tzfeTester
         private TzfeGameEngine mGame;
 		private GameMoves mLastFailedMove;
 
+		ConsoleColor savedBackColor = Console.BackgroundColor;
+		ConsoleColor savedForeColor = Console.ForegroundColor;
+
 		public GameRunner() {}
 
         public void Play() {
@@ -74,7 +77,11 @@ namespace tzfeTester
 				Console.Write("\nOky Doky!!. Running panel size {0}, using AI = {1}.\nPress space or other key to continue, else 'Q' to Quit: ", mSize, mUseAi);
 				answer = Console.ReadLine() ?? "";
 				answer = answer.Length > 0 ? answer.ToLower() : "";
-				if (answer == "q") return;
+				if (answer == "q") {
+					RestoreScreen();
+					return;
+				}
+
 				this.PlayGame(); // play this game.
 			}
         }
@@ -134,13 +141,16 @@ namespace tzfeTester
 			}
 		}
 
+		private void RestoreScreen() {
+			Console.BackgroundColor = savedBackColor;
+			Console.ForegroundColor = savedForeColor;
+			Console.Clear();
+		}
+
 		private void ClearScreen() {
-			//Console.WriteLine("Clearing the screen!");
-			//ConsoleColor backColor = Console.BackgroundColor;
-			//ConsoleColor foreColor = Console.ForegroundColor;
-			//Console.Clear();
 			Console.BackgroundColor = ConsoleColor.DarkBlue;
 			Console.ForegroundColor = ConsoleColor.Yellow;
+			Console.Clear();
 		}
 
 		private void RenderPanel() {
