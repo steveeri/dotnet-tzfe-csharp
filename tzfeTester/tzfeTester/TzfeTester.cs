@@ -31,9 +31,11 @@ namespace tzfeTester {
 		private int mPrevHiScore = 0;
 		private int mSize = -1;
 		private TzfeGameEngine mGame;
-		private GameMoves mLastMove = GameMoves.Empty;
+		private GameMoves mLastMove = GameMoves.New;
+		private DateTime mLastMoveDts = new DateTime();
 		private bool mLastMoveOk = true;
 		private bool mUndoRequestFailed = false;
+		private bool mPlaying = false;
 
 		readonly ConsoleColor savedBackColor = Console.BackgroundColor;
 		readonly ConsoleColor savedForeColor = Console.ForegroundColor;
@@ -73,6 +75,7 @@ namespace tzfeTester {
 
 				// Construct new Game.
 				mGame = new TzfeGameEngine(this, mSize);
+				mPlaying = true;
 				mGame.NewGame(mPrevHiScore);
 
 				Console.Write("\nOky Doky!!. Running panel size {0}, using AI = {1}.\nPress enter to continue, else 'Q' to Quit: ", mSize, mUseAi);
@@ -90,13 +93,10 @@ namespace tzfeTester {
 			ClearScreen();
 			var action = "\n";
 
-			while (mGame.HasMovesRemaining()) {
+			var counter = 0;
 
-				// Clear screen and output updated game board resulting from last input action.
-				ClearScreen();
-				RenderPanel();
-				Console.WriteLine(action);
-				Console.Write(prompt);
+			// Either machine is playing or under manual control.
+			while ((mUseAi && mGame.HasMovesRemaining()) || (!mUseAi && mPlaying)) {
 
 				if (mUndoRequestFailed) {
 					Console.WriteLine(undoFailed);
@@ -106,9 +106,25 @@ namespace tzfeTester {
 				ConsoleKey input; // holds decision
 
 				if (mUseAi) {
-					await Task.Delay(1500);             // wait for 1.5 seconds... then bang-on
-					input = RunAI();                    // hit Ai for next move
-				} else input = Console.ReadKey().Key;    // get unbuffered user input.
+					// AI User => with size 4 tilesprint every 40 moves, size 10 every 100.
+					if (counter++ % (mSize*5) == 0) {
+						// Clear screen and output updated game board resulting from last input action.
+						ClearScreen();
+						RenderPanel();
+						Console.WriteLine(action);
+						Console.Write(prompt);
+					}
+					// The bigger the grid the shorter the delay time.
+					await Task.Delay(1500 / (mSize * mSize));
+					input = RunAI();                 // hit Ai for next move
+				} else {
+					// Human Users provide a natural delay to inputs and rendering.
+					ClearScreen();
+					RenderPanel();
+					Console.WriteLine(action);
+					Console.Write(prompt);
+					input = Console.ReadKey().Key;   // get unbuffered user input.
+				}
 
 				action = "\n\tLast action: ";
 
@@ -131,6 +147,7 @@ namespace tzfeTester {
 					break;
 				case ConsoleKey.N:
 					mGame.NewGame(mPrevHiScore);
+					mPlaying = true;
 					action += "start new game";
 					break;
 				case ConsoleKey.B:
@@ -143,12 +160,16 @@ namespace tzfeTester {
 					action += "quit current game";
 					action += quitMsg;
 					Console.WriteLine(action);
+					mPlaying = false;
 					return;  // Exit the game program here.
 				default:
 					action += invalidAction;
 					break;
 				}
 			}
+
+			// We ran out of moves. Ensure we render last panel.
+			if (mUseAi) { ClearScreen(); RenderPanel(); }
 		}
 
 		private void RestoreScreen() {
@@ -196,6 +217,7 @@ namespace tzfeTester {
 
 		public void UserFail() {
 			Console.WriteLine(youLose);
+			mPlaying = false;
 		}
 
 		public void UserPB(int score) {
@@ -214,9 +236,10 @@ namespace tzfeTester {
 			mUndoRequestFailed = true;
 		}
 
-		public void MoveRequestOutcome(GameMoves move, bool success) {
+		public void MoveRequestOutcome(GameMoves move, int moves, bool success, DateTime dts) {
 			mLastMove = move;
 			mLastMoveOk = success;
+			mLastMoveDts = dts;
 		}
 	}
 

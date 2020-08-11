@@ -12,11 +12,11 @@ namespace tzfeGameEngine {
 		void UserFail();
 		void UndoRequestFail();
 		void UserScoreChanged(int score);
-		void MoveRequestOutcome(GameMoves move, bool success);
+		void MoveRequestOutcome(GameMoves move, int moves, bool success, DateTime dts);
 	}
 
 	// Allowable game moves
-	public enum GameMoves { Up, Down, Left, Right, Empty };
+	public enum GameMoves { Up, Down, Left, Right, New };
 
 	// Allowable tile movement sequences
 	public enum TileMoveType { Add, Slide, Merge, Clear, Reset };
@@ -36,11 +36,12 @@ namespace tzfeGameEngine {
 		private readonly int mWinTarget;
 		private readonly int mMaxPreviousMoves;
 
+		private DateTime mStartDts;
 		private int mScore;
+		private int mMoves;
 		private int mPreviousHighScore;
 		private int mMaxTile;
 		private int mNumEmpty;
-		private bool mGameOver;
 
 		private readonly List<GameBoardRecord> mPreviousMoves = new List<GameBoardRecord>();
 		private readonly List<Transition> mTransitions = new List<Transition>();
@@ -72,7 +73,7 @@ namespace tzfeGameEngine {
 			mBlankTile = 0;
 			mMaxTile = 0;
 			mScore = 0;
-			mGameOver = false;
+			mMoves = 0;
 		}
 
 		// Reset the playing board, and generate rendering transition records
@@ -80,8 +81,9 @@ namespace tzfeGameEngine {
 			mPreviousHighScore = newHighScore;
 			mNumEmpty = mGridCount;
 			mMaxTile = mBlankTile;
-			mGameOver = false;
 			mScore = 0;
+			mMoves = 1;
+			mStartDts = DateTime.Now;
 
 			// Clear all lists/arrays.
 			mPreviousMoves.Clear();
@@ -97,9 +99,9 @@ namespace tzfeGameEngine {
 
 			AddNewTile(2);
 			AddNewTile(2);
-			mPreviousMoves.Insert(0, GetGameBoardRecord(GameMoves.Empty, true));
+			mPreviousMoves.Insert(0, GetGameBoardRecord(GameMoves.New, true));
 			ApplyGameMoves();
-			mGameDelegate.MoveRequestOutcome(GameMoves.Empty, true);
+			mGameDelegate.MoveRequestOutcome(GameMoves.New, mMoves, true, new DateTime());
 		}
 
 		// RePlot the game board to an earlier time.
@@ -113,7 +115,15 @@ namespace tzfeGameEngine {
 
 		// Create and return a current game board status record object
 		private GameBoardRecord GetGameBoardRecord(GameMoves move, bool success) {
-			return new GameBoardRecord(mTiles, mScore, mNumEmpty, mGameOver, mMaxTile, move, success);
+			return new GameBoardRecord(mTiles, mScore, mNumEmpty, mMaxTile, move, success);
+		}
+
+		public DateTime NewGameStartDts {
+			get { return mStartDts.Date; }
+		}
+
+		public int Moves {
+			get { return mMoves; }
 		}
 
 		public bool AcheivedTarget() {
@@ -121,9 +131,7 @@ namespace tzfeGameEngine {
 		}
 
 		public int GetTileValue(int at) {
-			if (at >= 0 && at < mGridCount) {
-				return mTiles[at];
-			}
+			if (at >= 0 && at < mGridCount) return mTiles[at];
 			return 0;
 		}
 
@@ -205,13 +213,10 @@ namespace tzfeGameEngine {
 				break;
 			}
 
-			// Report back to delegate what happened with requested action
-			mGameDelegate.MoveRequestOutcome(move, changed);
-
 			// Board updated => add new tile and store previous changes game board
 			if (changed) {
+				mMoves++;
 				AddNewTile();
-				// index zero => current/last board result
 				mPreviousMoves.Insert(0, GetGameBoardRecord(move, true));
 				// If over max allowed undo moves then delete oldest held record.
 				if (mPreviousMoves.Count() > mMaxPreviousMoves + 1) {
@@ -220,6 +225,10 @@ namespace tzfeGameEngine {
 				ApplyGameMoves();
 			}
 
+			// Report back to delegate what happened with requested action
+			mGameDelegate.MoveRequestOutcome(move, mMoves, changed, new DateTime());
+
+			// index zero => current/last board result
 			// Check to see if score was updated.
 			if (mScore != tempScore) {
 				mGameDelegate.UserScoreChanged(mScore);
@@ -227,7 +236,6 @@ namespace tzfeGameEngine {
 
 			// Check to see if run out of moves => Report state to delegate.
 			if (!HasMovesRemaining()) {
-				mGameOver = true;
 				if (mMaxTile >= mWinTarget) {
 					mGameDelegate.UserWin();
 				} else {
@@ -256,12 +264,12 @@ namespace tzfeGameEngine {
 				mTiles.Clear(); // first clear transactions.
 				foreach (int val in pm.mTiles) mTiles.Add(val);
 				mScore = pm.mScore;
+				mMoves--;
 				mNumEmpty = pm.mNumEmpty;
-				mGameOver = pm.mGameOver;
 				mMaxTile = pm.mMaxTile;
 				mPreviousMoves.RemoveAt(0);
 				ReplotBoard(); // redraw and create transitions for re-rendering the board.
-				mGameDelegate.MoveRequestOutcome(pm.mMove, pm.mMoveSuccess);
+				mGameDelegate.MoveRequestOutcome(pm.mMove, mMoves, pm.mMoveSuccess, new DateTime());
 				return true;
 			}
 			mGameDelegate.UndoRequestFail();
@@ -372,24 +380,27 @@ namespace tzfeGameEngine {
 		//        | 2 | 5 | 8 |
 		public String AsString() {
 
-			string bar = "-";
-			for (int i = 0; i < mDimension; i++) bar += "--";
+			DateTime time = new DateTime(DateTime.Now.Ticks - mStartDts.Ticks);
 
-			String lines = "\n         [[[ 2048 ]]]\n\n";
-			lines += "\n           Score: " + mScore;
-			lines += "\n        Max Tile: " + mMaxTile;
-			lines += "\n       " + bar + "\n";
+			string bar = "-";
+			for (int i = 0; i < mDimension; i++) bar += "-----";
+
+			String lines = "\n          [[[ 2048 ]]]\n\n";
+			lines += $"\n           Score: {mScore}";
+			lines += $"\n        Max Tile: {mMaxTile}";
+			lines += $"\n           Moves: {mMoves}";
+			lines += $"\n            Time: {time:mm:ss}";
+			lines += $"\n       {bar}\n";
 
 			// Row by row from the top down, capture values going left to right.
 			for (int i = 0; i < mDimension; i++) {
 				String line = "       ";
 				for (int j = 0; j < mDimension; j++) {
-					line += "|" + mTiles[i + j * mDimension];
+					line += $"|{mTiles[i + j * mDimension],4}";
 				}
-				lines += line + "|\n";
+				lines += line + $"|\n       {bar}\n";
 			}
-
-			lines += "       " + bar + "\n";
+			lines += $"       {bar}\n";
 
 			return lines;
 		}
@@ -422,19 +433,18 @@ namespace tzfeGameEngine {
 		public readonly List<int> mTiles = new List<int>();
 		public readonly int mScore;
 		public int mNumEmpty;
-		public readonly bool mGameOver;
 		public readonly int mMaxTile;
 		public readonly GameMoves mMove;
 		public readonly bool mMoveSuccess;
 
-		public GameBoardRecord(List<int> tiles, int score, int numEmpty, 
-			bool gameOver, int maxTile, GameMoves move, bool moveSuccess) {
+		public GameBoardRecord(
+			List<int> tiles, int score, int numEmpty, 
+			int maxTile, GameMoves move, bool moveSuccess) {
 
 			foreach (int val in tiles) mTiles.Add(val);
 			mTiles.TrimExcess();
 			mScore = score;
 			mNumEmpty = numEmpty;
-			mGameOver = gameOver;
 			mMaxTile = maxTile;
 			mMove = move;
 			mMoveSuccess = moveSuccess;
