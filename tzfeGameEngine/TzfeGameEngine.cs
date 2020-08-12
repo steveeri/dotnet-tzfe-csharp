@@ -121,8 +121,12 @@ namespace tzfeGameEngine {
 			get { return mStartDts?.Date; }
 		}
 
-		public bool AcheivedTarget() {
-			return (mMaxTile >= mWinTarget);
+		public int NumMoves {
+			get { return mMoves; }
+		}
+
+		public bool AcheivedTarget {
+			get { return (mMaxTile >= mWinTarget); }
 		}
 
 		public int GetTileValue(int at) {
