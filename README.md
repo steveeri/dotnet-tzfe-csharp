@@ -4,7 +4,7 @@
 
 ![Screenshot](dotnet.screenshot1-2048.png)
 
-Note: the included compiled version of the app (filename = 2048), was compiled on Linux (i.e. elf binary). It is completely standalone and requires no special libraries.  This latest version of the game includes a GameEngine library as well as a Tester to run the Game engine.  The game can be played manually (like anywhere else), but also has some AI logic to allow the computer to run the game.
+This latest version of the game includes a GameEngine .net library solution as well as a Tester solution to run the Game engine.  The game can be played manually (like anywhere else), but also has some AI logic to allow the computer to run the game.
  
 ## Game Overview
 
