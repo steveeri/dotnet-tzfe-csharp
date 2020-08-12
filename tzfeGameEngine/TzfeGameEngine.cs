@@ -34,9 +34,9 @@ namespace tzfeGameEngine {
 		private readonly int mBlankTile;
 		private readonly int mRandomRatio;
 		private readonly int mWinTarget;
-		private readonly int mMaxPreviousMoves;
+		private readonly int mMaxUndos;
 
-		private DateTime mStartDts;
+		private DateTime? mStartDts;
 		private int mScore;
 		private int mMoves;
 		private int mPreviousHighScore;
@@ -55,20 +55,19 @@ namespace tzfeGameEngine {
 			int dimension = 4,
 			int randomRatio = 70,
 			int winTarget = 2048,
-			int maxPreviousMoves = 5) {
+			int maxUndos = 5) {
 
 			// Check that we are receiving valid workable values
 			mGameDelegate = gameDelegate ?? throw new ArgumentException("game delegate must not be null");
 			if (dimension < 2) throw new ArgumentException("Size of board must be greater than 1");
-			if (dimension > 1000) throw new ArgumentException("Size of board must not be rediculously large");
-			if (dimension > 1000) throw new ArgumentException("Size of board must not be rediculously large");
+			if (dimension > 100) throw new ArgumentException("Size of board must not be rediculously large");
 
 			mGridCount = dimension * dimension;
 			mNumEmpty = mGridCount;
 			mDimension = dimension;
 			mRandomRatio = randomRatio;
 			mWinTarget = winTarget;
-			mMaxPreviousMoves = maxPreviousMoves;
+			mMaxUndos = maxUndos;
 			mPreviousHighScore = 0;
 			mBlankTile = 0;
 			mMaxTile = 0;
@@ -118,12 +117,8 @@ namespace tzfeGameEngine {
 			return new GameBoardRecord(mTiles, mScore, mNumEmpty, mMaxTile, move, success);
 		}
 
-		public DateTime NewGameStartDts {
-			get { return mStartDts.Date; }
-		}
-
-		public int Moves {
-			get { return mMoves; }
+		public DateTime? NewGameStartDts {
+			get { return mStartDts?.Date; }
 		}
 
 		public bool AcheivedTarget() {
@@ -243,7 +238,7 @@ namespace tzfeGameEngine {
 				AddNewTile();
 				mPreviousMoves.Insert(0, GetGameBoardRecord(move, true));
 				// If over max allowed undo moves then delete oldest held record.
-				if (mPreviousMoves.Count() > mMaxPreviousMoves + 1) {
+				if (mPreviousMoves.Count() > mMaxUndos + 1) {
 					mPreviousMoves.RemoveAt(mPreviousMoves.Count() - 1);
 				}
 				ApplyGameMoves();
@@ -404,7 +399,8 @@ namespace tzfeGameEngine {
 		//        | 2 | 5 | 8 |
 		public String AsString() {
 
-			DateTime time = new DateTime(DateTime.Now.Ticks - mStartDts.Ticks);
+			var nowTicks = DateTime.Now.Ticks;
+			DateTime time = new DateTime(nowTicks - mStartDts?.Ticks ?? nowTicks);
 
 			string bar = "-";
 			for (int i = 0; i < mDimension; i++) bar += "-----";
