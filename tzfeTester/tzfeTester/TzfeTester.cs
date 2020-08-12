@@ -14,18 +14,18 @@ namespace tzfeTester {
 	class GameRunner : ITzfeGameDelegate {
 
 		// define some strings
-		private const string clearScrn = "clear";
-		private const string prompt = "\n\t*** Let's PLAY!! ***\n\tActions:[arrows(left,right,up,down), n=new game, q=quit game]: ";
+		private const string humanPrompt = "\n\t*** Let's PLAY!! ***\n\tActions:[arrows(left,right,up,down), n=new game, q=quit game]: ";
+		private const string aiPrompt = "\n\t*** AI IS PLAY!! ***\n\tStandby until game finishes: ";
 		private const string nilSlideLeft = " - CAN'T SLIDE OR COMPACT ANY MORE LEFT!";
 		private readonly string nilSlideRight = " - CAN'T SLIDE OR COMPACT ANY MORE RIGHT!";
 		private readonly string nilSlideUp = " - CAN'T SLIDE OR COMPACT ANY MORE UP!";
 		private readonly string nilSlideDown = " - CAN'T SLIDE OR COMPACT ANY MORE DOWN!";
 		private readonly string invalidAction = "invalid action. Please try again!";
 		private readonly string quitMsg = "\n\n\t*** Thanks for playing :)  Come again! ***\n\n";
-		private readonly string youLose = "\n\t*** GAME OVER -> YOU LOSE. NO MOVES REMAINING. PRESS ENTER FOR NEW GAME: ***\n";
-		private readonly string youWin = "\n\t*** YOU DA WINNER  !!!AWESOME!!!  PRESS ENTER FOR NEW GAME: ***\n";
-		private readonly string yourPb = "\n\t*** YOU have hit another PB !!!AWESOME!!!: ***\n";
-		private readonly string undoFailed = "\n\n\t*** Sorry!! No back moves available!!!: ***\n";
+		private readonly string youLose = "\n\t*** THE GAME IS LOST. NO MOVES REMAINING. PRESS ENTER TO CONTINUE ***";
+		private readonly string youWin = "\n\t*** YOU DA WINNER  !!!AWESOME!!!  PRESS ENTER TO CONTINUE ***";
+		private readonly string yourPb = "\n\t*** YOU have hit another PB !!!AWESOME!!! ***\n";
+		private readonly string undoFailed = "\n\n\t*** Sorry!! No back moves available!!! ***\n";
 
 		private bool mUseAi = false;
 		private int mPrevHiScore = 0;
@@ -49,12 +49,12 @@ namespace tzfeTester {
 			string answer = null;
 
 			var date = DateTime.Now;
-			Console.WriteLine("\nRighto!!. Let's play TZFE (2048)\n");
+			Console.WriteLine("\n\tRighto!!. Let's play TZFE (2048)\n");
 
 			while (true) {
 				bool playSameAsBefore = false;
 				if (mSize > 1) {
-					Console.Write("Would you like to replay the same as before, New, or Quit: [Y/n/q]?: ");
+					Console.Write("\n\tWould you like to replay the same as before, New, or Quit: [Y/n/q]?: ");
 					answer = Console.ReadLine() ?? "y";
 					answer = answer.Length > 0 ? answer : "y";
 					if (answer == "q") return;
@@ -62,12 +62,12 @@ namespace tzfeTester {
 				}
 
 				if (!playSameAsBefore) {
-					Console.Write("What size panel do you want?: Default = (4)?: ");
+					Console.Write("\tWhat size panel do you want?: Default = (4)?: ");
 					answer = Console.ReadLine() ?? "4";
 					answer = answer.Length > 0 ? answer : "4";
 					mSize = Int32.Parse(answer);
 
-					Console.Write("Would you like to play yourself or run AI: [AI/self]?: ");
+					Console.Write("\tWould you like to play yourself or run AI: [AI/self]?: ");
 					answer = Console.ReadLine() ?? "a";
 					answer = answer.Length > 0 ? answer.ToLower() : "a";
 					mUseAi = (answer.Length == 0 || answer == "a" || answer == "ai");
@@ -78,7 +78,7 @@ namespace tzfeTester {
 				mPlaying = true;
 				mGame.NewGame(mPrevHiScore);
 
-				Console.Write("\nOky Doky!!. Running panel size {0}, using AI = {1}.\nPress enter to continue, else 'Q' to Quit: ", mSize, mUseAi);
+				Console.Write("\n\tOky Doky!!. Running panel size {0}, using AI = {1}.\n\tPress ENTER to continue, else 'Q' to Quit: ", mSize, mUseAi);
 				if (Console.ReadKey().Key == ConsoleKey.Q) {
 					RestoreScreen();
 					return;
@@ -94,6 +94,7 @@ namespace tzfeTester {
 			var action = "\n";
 
 			var counter = 0;
+			var busyStr = ">";
 
 			// Either machine is playing or under manual control.
 			while ((mUseAi && mGame.HasMovesRemaining()) || (!mUseAi && mPlaying)) {
@@ -106,13 +107,14 @@ namespace tzfeTester {
 				ConsoleKey input; // holds decision
 
 				if (mUseAi) {
-					// AI User => with size 4 tilesprint every 40 moves, size 10 every 100.
-					if (counter++ % (mSize*5) == 0) {
+					// AI User => with size 4 tiles print every 40 moves, size 10 every 100.
+					if (counter++ % (mSize*2) == 0) {
 						// Clear screen and output updated game board resulting from last input action.
 						ClearScreen();
 						RenderPanel();
 						Console.WriteLine(action);
-						Console.Write(prompt);
+						busyStr = $"={busyStr}";
+						Console.Write($"{aiPrompt}{busyStr}");
 					}
 					// The bigger the grid the shorter the delay time.
 					await Task.Delay(1500 / (mSize * mSize));
@@ -122,7 +124,7 @@ namespace tzfeTester {
 					ClearScreen();
 					RenderPanel();
 					Console.WriteLine(action);
-					Console.Write(prompt);
+					Console.Write(humanPrompt);
 					input = Console.ReadKey().Key;   // get unbuffered user input.
 				}
 
@@ -190,8 +192,24 @@ namespace tzfeTester {
 
 		private ConsoleKey RunAI() {
 
+			var pick = 0;  // Default pick is Up.
+
+			// Assess conditions to maximise compaction of tiles.
+			int compactsUpDown = this.mGame.CompactVerticallyHint.factor;
+			int compactsLeftRight = this.mGame.CompactHorizontallyHint.factor;
+
+			if (compactsUpDown > 0 || compactsLeftRight > 0) {
+				pick = new Random().Next(2);
+				if (compactsUpDown > compactsLeftRight) {
+					return (pick > 0) ? ConsoleKey.UpArrow : ConsoleKey.DownArrow;
+				} else {
+					return (pick > 0) ? ConsoleKey.LeftArrow : ConsoleKey.RightArrow;
+				}
+			}
+
+			// OK no compaction options, so run basic random selection process.
 			int options = mLastMoveOk ? 4 : 3;  // 4 or 3 to guess from.
-			int pick = new Random().Next(options);
+			pick = new Random().Next(options);
 			GameMoves[] moveSelection = { GameMoves.Up, GameMoves.Down, GameMoves.Left, GameMoves.Right };
 
 			short cnt = -1;
@@ -216,8 +234,11 @@ namespace tzfeTester {
 		}
 
 		public void UserFail() {
-			Console.WriteLine(youLose);
 			mPlaying = false;
+			ClearScreen();
+			RenderPanel();
+			Console.WriteLine(youLose);
+			Console.Read();
 		}
 
 		public void UserPB(int score) {
@@ -229,7 +250,10 @@ namespace tzfeTester {
 		}
 
 		public void UserWin() {
+			ClearScreen();
+			RenderPanel();
 			Console.WriteLine(youWin);
+			Console.Read();
 		}
 
 		public void UndoRequestFail() {

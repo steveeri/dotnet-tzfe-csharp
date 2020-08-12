@@ -167,23 +167,47 @@ namespace tzfeGameEngine {
 			return false;
 		}
 
-		public bool HasMovesRemaining() {
-
-			if (this.mNumEmpty > 0) return true;
-
-			// check left-right for compact moves remaining.
-			int arrLimitX = mGridCount - mDimension;
-			for (int i = 0; i < arrLimitX; i++) {
-				if (mTiles[i] == mTiles[i + mDimension]) return true;
-			}
-
-			// check up-down for compact moves remaining.
-			int arrLimitY = mGridCount - 1;
-			for (int i = 0; i < arrLimitY; i++) {
-				if ((i + 1) % mDimension > 0) {
-					if (mTiles[i] == mTiles[i + 1]) return true;
+		// check up-down for compact moves remaining.
+		public (int cnt, int factor) CompactVerticallyHint {
+			get {
+				int count = 0;
+				int factor = 0;
+				int arrLimitY = mGridCount - 1;
+				for (int i = 0; i < arrLimitY; i++) {
+					if ((i + 1) % mDimension > 0) {
+						// The bigger the adjacent tiles... the bigger the hint.
+						if (mTiles[i] > 0 && mTiles[i] == mTiles[i + 1]) {
+							count++;
+							factor += mTiles[i] * mTiles[i];
+						}
+					}
 				}
+				return (count, factor);
 			}
+		}
+
+		// check left-right for compact moves remaining.
+		public (int cnt, int factor) CompactHorizontallyHint {
+			get {
+				int count = 0;
+				int factor = 0;
+				int arrLimitX = mGridCount - mDimension;
+				for (int i = 0; i < arrLimitX; i++) {
+					// The bigger the adjacent tiles... the bigger the hint.
+					if (mTiles[i] > 0 && mTiles[i] == mTiles[i + mDimension]) {
+						count++;
+						factor += mTiles[i] * mTiles[i];
+					}
+				}
+				return (count, factor);
+			}
+		}
+
+		// Determine if any move conditions remain.
+		public bool HasMovesRemaining() {
+			if (mNumEmpty > 0) return true;
+			if (CompactVerticallyHint.cnt > 0) return true;
+			if (CompactHorizontallyHint.cnt > 0) return true;
 			return false;
 		}
 
@@ -385,8 +409,9 @@ namespace tzfeGameEngine {
 			string bar = "-";
 			for (int i = 0; i < mDimension; i++) bar += "-----";
 
-			String lines = "\n          [[[ 2048 ]]]\n\n";
+			String lines = "\n          [[[ 2048 ]]]\n";
 			lines += $"\n           Score: {mScore}";
+			lines += $"\n        Hi-Score: {mPreviousHighScore}";
 			lines += $"\n        Max Tile: {mMaxTile}";
 			lines += $"\n           Moves: {mMoves}";
 			lines += $"\n            Time: {time:mm:ss}";
