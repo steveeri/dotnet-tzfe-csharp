@@ -5,12 +5,13 @@ using tzfeGameEngine;
 namespace tzfeTester {
 	class Program {
 		static async Task Main(string[] args) {
-			Console.WriteLine("Hello We are able to test the engine");
+			Console.WriteLine("Hello We are about to test the tzfeGameEngine");
 			GameRunner runner = new GameRunner();
 			await runner.PlayAsync();
 		}
 	}
 
+	// A purpose built task to show how to interact with the GameEngine library.
 	class GameRunner : ITzfeGameDelegate {
 
 		// define some strings
@@ -42,6 +43,8 @@ namespace tzfeTester {
 
 		public GameRunner() { }
 
+		// Function called to supply the outer game loop controlling game.
+		// The user can firstly set the game panel size anf whether to play manually or run AI.
 		public async Task PlayAsync() {
 
 			this.ClearScreen();
@@ -88,6 +91,7 @@ namespace tzfeTester {
 			}
 		}
 
+		// Secondary game loop accepting movement inputs until game ends or is cancelled.
 		private async Task PlayGameAsync() {
 
 			ClearScreen();
@@ -118,14 +122,14 @@ namespace tzfeTester {
 					}
 					// The bigger the grid the shorter the delay time.
 					await Task.Delay(1500 / (mSize * mSize));
-					input = RunAI();                 // hit Ai for next move
+					input = RunAI();   // hit Ai for next move
 				} else {
 					// Human Users provide a natural delay to inputs and rendering.
 					ClearScreen();
 					RenderPanel();
 					Console.WriteLine(action);
 					Console.Write(humanPrompt);
-					input = Console.ReadKey().Key;   // get unbuffered user input.
+					input = Console.ReadKey().Key; // get unbuffered user input.
 				}
 
 				action = "\n\tLast action: ";
@@ -228,11 +232,13 @@ namespace tzfeTester {
 		}
 
 
-		// TZFE Interface Methods
+		// Implemented example use ofTZFE Interface Methods
+		// Implemented example use ofTZFE Interface Methods
 		public void UpdateTileValue(Transition move) {
-			// Can be used to animate all tile movements.
+			// Can be used to animate all tile movements. Not used in this console app.
 		}
 
+		// Recieved signal when user loses game.
 		public void UserFail() {
 			mPlaying = false;
 			ClearScreen();
@@ -241,14 +247,17 @@ namespace tzfeTester {
 			Console.Read();
 		}
 
+		// Recieved signal when user exceeds Previous Personal Best.
 		public void UserPB(int score) {
 			Console.WriteLine(yourPb);
 		}
 
+		// Recieved signal when user's requested action causes a score change.
 		public void UserScoreChanged(int score) {
 			if (score > mPrevHiScore) mPrevHiScore = score;
 		}
 
+		// Recieved signal when user wins the game (meets or exceeds target).
 		public void UserWin() {
 			ClearScreen();
 			RenderPanel();
@@ -256,10 +265,12 @@ namespace tzfeTester {
 			Console.Read();
 		}
 
+		// Recieved signal when requsted undo request is unavailable.
 		public void UndoRequestFail() {
 			mUndoRequestFailed = true;
 		}
 
+		// Recieved signal reporting the outome of the last requested action.
 		public void MoveRequestOutcome(GameMoves move, int moves, bool success, DateTime dts) {
 			mLastMove = move;
 			mLastMoveOk = success;

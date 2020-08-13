@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace tzfeGameEngine {
 
-	// Required protocol of delegate using this game engine
+	// Required protocol that the instantiating delegate class must implement to use the game engine.
 	public interface ITzfeGameDelegate {
 		void UpdateTileValue(Transition move);
 		void UserPB(int score);
@@ -15,16 +15,17 @@ namespace tzfeGameEngine {
 		void MoveRequestOutcome(GameMoves move, int moves, bool success, DateTime dts);
 	}
 
-	// Allowable game moves
+	// Allowable game moves actions. Caller passes these to ActionMove() function.
 	public enum GameMoves { Up, Down, Left, Right, New };
 
-	// Allowable tile movement sequences
+	// Allowable tile movement sequences visible externally within Transition records.
 	public enum TileMoveType { Add, Slide, Merge, Clear, Reset };
 
 
-	// The core of the 2048 game logic
-	// Game board moves are tracked via the compilation of transitions involved in a tile movement.
-	// The game engine uses constants values found in the Constants.swift class
+	// The core of the 2048 game logic. Game board moves are tracked via the compilation of 
+	// transitions involved in a tile movement.  The game engine supports dynamic sizing at 
+	// time of construction, and suports user defined win and undo capabilities.  The engine 
+	// uses the above enumerations and Interface to allow caller to interact with it. 
 	public class TzfeGameEngine {
 
 		private ITzfeGameDelegate mGameDelegate;
@@ -112,28 +113,46 @@ namespace tzfeGameEngine {
 			ApplyGameMoves();
 		}
 
-		// Create and return a current game board status record object
+		// Create and return a current game board status record object.
 		private GameBoardRecord GetGameBoardRecord(GameMoves move, bool success) {
 			return new GameBoardRecord(mTiles, mScore, mNumEmpty, mMaxTile, move, success);
 		}
 
+		// Returns the date time stamp the current game commenced.
 		public DateTime? NewGameStartDts {
 			get { return mStartDts?.Date; }
 		}
 
+		// Returns the number of moves relative to the current play.
 		public int NumMoves {
 			get { return mMoves; }
 		}
 
+		// Returns true if game has met or exceed win target.
 		public bool AcheivedTarget {
 			get { return (mMaxTile >= mWinTarget); }
 		}
 
-		public int GetTileValue(int at) {
+		// Gets the int value at position in the linear array.
+		public int? GetTileValue(int at) {
 			if (at >= 0 && at < mGridCount) return mTiles[at];
-			return 0;
+			return null;
 		}
 
+		// Gets the int value at (X,Y) position coordinates.
+		// Zero-Zero is in position top left... down, then top next column... down.
+		// Typ.   | 0,0 | 0,1 | 0,2 |    Eample is (3 x 3 grid) = 9 tiles.
+		//        | 1,0 | 1,1 | 1,2 |
+		//        | 2,0 | 2,1 | 2,2 |
+		public int? GetTileValue(int posX, int posY) {
+
+			if (posX < 0 || posX >= mDimension) return null;
+			if (posY < 0 || posY >= mDimension) return null;
+
+			return mTiles[(posY * mDimension) + posX];
+		}
+
+		// If a vacant position exists then use seedValue to place a new tile in a random location.
 		private bool AddNewTile(int seedValue = -1) {
 			if (mNumEmpty == 0) return false;
 
@@ -166,7 +185,8 @@ namespace tzfeGameEngine {
 			return false;
 		}
 
-		// check up-down for compact moves remaining.
+		// Check up-down for compact moves remaining. 
+		// Returns tuple of count and scale of compaction.
 		public (int cnt, int factor) CompactVerticallyHint {
 			get {
 				int count = 0;
@@ -186,6 +206,7 @@ namespace tzfeGameEngine {
 		}
 
 		// check left-right for compact moves remaining.
+		// Returns tuple of count and scale of compaction.
 		public (int cnt, int factor) CompactHorizontallyHint {
 			get {
 				int count = 0;
@@ -273,14 +294,15 @@ namespace tzfeGameEngine {
 			return changed;
 		}
 
-		// Callback to the delegate to render game board changes
+		// Callback to the delegate to report of game board changes in terms of tile transitions.
+		// The application of the sum of transitions would allow caller to animate tile movements.
 		private void ApplyGameMoves() {
 			foreach (Transition trans in mTransitions) {
 				mGameDelegate.UpdateTileValue(trans);
 			}
 		}
 
-		// Regress state and move sequences back to previous
+		// User selected action to regress state and move sequences back to previous play point.
 		public bool GoBackOneMove() {
 			if (mPreviousMoves.Count() > 1) {
 				GameBoardRecord pm = mPreviousMoves[1];
@@ -353,6 +375,7 @@ namespace tzfeGameEngine {
 			return result;
 		}
 
+		// Slide all tiles in required direction if empty spaces exist.
 		private bool SlideTileRowOrColumn(params int[] indexes) {
 			bool moved = false;
 
@@ -376,6 +399,7 @@ namespace tzfeGameEngine {
 			return moved;
 		}
 
+		// Compact adjacent tile in required direction if they have the same value. 
 		private bool CompactTileRowOrColumn(params int[] indexes) {
 
 			bool compacted = false;
@@ -430,6 +454,8 @@ namespace tzfeGameEngine {
 			return lines;
 		}
 
+		// Returns a simple linear string representation of the game board primarily
+		// for debugging purposes for gameEngine users.
 		public String AsStringLinear() {
 			string line = "|";
 			for (int i = 0; i < mGridCount; i++) line += mTiles[i] + "|";
@@ -438,7 +464,7 @@ namespace tzfeGameEngine {
 
 	} // end class.
 
-	// Tile movement instructions record for the game board renderer
+	// Tile movement instruction records for the game board renderer to animate or action.
 	public class Transition {
 		readonly TileMoveType action;
 		readonly int value;
@@ -453,7 +479,7 @@ namespace tzfeGameEngine {
 		}
 	} // end class.
 
-	// Snapshot Object containing the status of previous game moves
+	// Snapshot Object containing the status of previous game moves. Support Undo capability.
 	public class GameBoardRecord {
 		public readonly List<int> mTiles = new List<int>();
 		public readonly int mScore;
