@@ -32,7 +32,7 @@ namespace tzfeTester {
 		private int mPrevHiScore = 0;
 		private int mSize = -1;
 		private TzfeGameEngine mGame;
-		private GameMoves mLastMove = GameMoves.New;
+		private GameMove mLastMove = GameMove.New;
 		private DateTime mLastMoveDts = new DateTime();
 		private bool mLastMoveOk = true;
 		private bool mUndoRequestFailed = false;
@@ -137,19 +137,19 @@ namespace tzfeTester {
 				switch (input) {
 				case ConsoleKey.LeftArrow:
 					action += "move left";
-					if (!mGame.ActionMove(GameMoves.Left)) action += nilSlideLeft;
+					if (!mGame.ActionMove(GameMove.Left)) action += nilSlideLeft;
 					break;
 				case ConsoleKey.RightArrow:
 					action += "move right";
-					if (!mGame.ActionMove(GameMoves.Right)) action += nilSlideRight;
+					if (!mGame.ActionMove(GameMove.Right)) action += nilSlideRight;
 					break;
 				case ConsoleKey.UpArrow:
 					action += "move up";
-					if (!mGame.ActionMove(GameMoves.Up)) action += nilSlideUp;
+					if (!mGame.ActionMove(GameMove.Up)) action += nilSlideUp;
 					break;
 				case ConsoleKey.DownArrow:
 					action += "move down";
-					if (!mGame.ActionMove(GameMoves.Down)) action += nilSlideDown;
+					if (!mGame.ActionMove(GameMove.Down)) action += nilSlideDown;
 					break;
 				case ConsoleKey.N:
 					mGame.NewGame(mPrevHiScore);
@@ -214,17 +214,17 @@ namespace tzfeTester {
 			// OK no compaction options, so run basic random selection process.
 			int options = mLastMoveOk ? 4 : 3;  // 4 or 3 to guess from.
 			pick = new Random().Next(options);
-			GameMoves[] moveSelection = { GameMoves.Up, GameMoves.Down, GameMoves.Left, GameMoves.Right };
+			GameMove[] moveSelection = { GameMove.Up, GameMove.Down, GameMove.Left, GameMove.Right };
 
 			short cnt = -1;
-			foreach (GameMoves move in moveSelection) {
+			foreach (GameMove move in moveSelection) {
 				if (!mLastMoveOk && mLastMove == move) continue;
 				if (++cnt != pick) continue;
 				switch (move) {
-				case GameMoves.Up: return ConsoleKey.UpArrow;
-				case GameMoves.Down: return ConsoleKey.DownArrow;
-				case GameMoves.Left: return ConsoleKey.LeftArrow;
-				case GameMoves.Right: return ConsoleKey.RightArrow;
+				case GameMove.Up: return ConsoleKey.UpArrow;
+				case GameMove.Down: return ConsoleKey.DownArrow;
+				case GameMove.Left: return ConsoleKey.LeftArrow;
+				case GameMove.Right: return ConsoleKey.RightArrow;
 				}
 				break;
 			}
@@ -271,7 +271,7 @@ namespace tzfeTester {
 		}
 
 		// Recieved signal reporting the outome of the last requested action.
-		public void MoveRequestOutcome(GameMoves move, int moves, bool success, DateTime dts) {
+		public void MoveRequestOutcome(GameMove move, int moves, bool success, DateTime dts) {
 			mLastMove = move;
 			mLastMoveOk = success;
 			mLastMoveDts = dts;

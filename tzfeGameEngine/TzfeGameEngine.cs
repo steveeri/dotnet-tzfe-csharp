@@ -12,11 +12,11 @@ namespace tzfeGameEngine {
 		void UserFail();
 		void UndoRequestFail();
 		void UserScoreChanged(int score);
-		void MoveRequestOutcome(GameMoves move, int moves, bool success, DateTime dts);
+		void MoveRequestOutcome(GameMove move, int moves, bool success, DateTime dts);
 	}
 
 	// Allowable game moves actions. Caller passes these to ActionMove() function.
-	public enum GameMoves { Up, Down, Left, Right, New };
+	public enum GameMove { Up, Down, Left, Right, New };
 
 	// Allowable tile movement sequences visible externally within Transition records.
 	public enum TileMoveType { Add, Slide, Merge, Clear, Reset };
@@ -99,9 +99,9 @@ namespace tzfeGameEngine {
 
 			AddNewTile(2);
 			AddNewTile(2);
-			mPreviousMoves.Insert(0, GetGameBoardRecord(GameMoves.New, true));
+			mPreviousMoves.Insert(0, GetGameBoardRecord(GameMove.New, true));
 			ApplyGameMoves();
-			mGameDelegate.MoveRequestOutcome(GameMoves.New, mMoves, true, new DateTime());
+			mGameDelegate.MoveRequestOutcome(GameMove.New, mMoves, true, new DateTime());
 		}
 
 		// RePlot the game board to an earlier time.
@@ -114,7 +114,7 @@ namespace tzfeGameEngine {
 		}
 
 		// Create and return a current game board status record object.
-		private GameBoardRecord GetGameBoardRecord(GameMoves move, bool success) {
+		private GameBoardRecord GetGameBoardRecord(GameMove move, bool success) {
 			return new GameBoardRecord(mTiles, mScore, mNumEmpty, mMaxTile, move, success);
 		}
 
@@ -233,7 +233,7 @@ namespace tzfeGameEngine {
 
 		// THIS FUNCTION IS THE MAIN CONTROLLER FOR GAME MOVES
 		// THIS FUNCTION IS THE MAIN CONTROLLER FOR GAME MOVES
-		public bool ActionMove(GameMoves move) {
+		public bool ActionMove(GameMove move) {
 
 			var tempScore = this.mScore;
 
@@ -243,16 +243,16 @@ namespace tzfeGameEngine {
 			bool changed = false;
 
 			switch (move) {
-			case GameMoves.Up:
+			case GameMove.Up:
 				changed = ActionMoveUp();
 				break;
-			case GameMoves.Down:
+			case GameMove.Down:
 				changed = ActionMoveDown();
 				break;
-			case GameMoves.Left:
+			case GameMove.Left:
 				changed = ActionMoveLeft();
 				break;
-			case GameMoves.Right:
+			case GameMove.Right:
 				changed = ActionMoveRight();
 				break;
 			}
@@ -483,14 +483,14 @@ namespace tzfeGameEngine {
 	public class GameBoardRecord {
 		public readonly List<int> mTiles = new List<int>();
 		public readonly int mScore;
-		public int mNumEmpty;
+		public readonly int mNumEmpty;
 		public readonly int mMaxTile;
-		public readonly GameMoves mMove;
+		public readonly GameMove mMove;
 		public readonly bool mMoveSuccess;
 
 		public GameBoardRecord(
 			List<int> tiles, int score, int numEmpty, 
-			int maxTile, GameMoves move, bool moveSuccess) {
+			int maxTile, GameMove move, bool moveSuccess) {
 
 			foreach (int val in tiles) mTiles.Add(val);
 			mTiles.TrimExcess();
