@@ -101,7 +101,7 @@ namespace tzfeTester {
 			var busyStr = ">";
 
 			// Either machine is playing or under manual control.
-			while ((mUseAi && mGame.HasMovesRemaining()) || (!mUseAi && mPlaying)) {
+			while ((mUseAi && mGame.HasMovesRemaining) || (!mUseAi && mPlaying)) {
 
 				if (mUndoRequestFailed) {
 					Console.WriteLine(undoFailed);
@@ -194,43 +194,16 @@ namespace tzfeTester {
 			Console.WriteLine(mGame.AsString());
 		}
 
+		// A calling class to wrap the game Engines AI Move Suggestion capability.
 		private ConsoleKey RunAI() {
-
-			var pick = 0;  // Default pick is Up.
-
-			// Assess conditions to maximise compaction of tiles.
-			int compactsUpDown = this.mGame.CompactVerticallyHint.factor;
-			int compactsLeftRight = this.mGame.CompactHorizontallyHint.factor;
-
-			if (compactsUpDown > 0 || compactsLeftRight > 0) {
-				pick = new Random().Next(2);
-				if (compactsUpDown > compactsLeftRight) {
-					return (pick > 0) ? ConsoleKey.UpArrow : ConsoleKey.DownArrow;
-				} else {
-					return (pick > 0) ? ConsoleKey.LeftArrow : ConsoleKey.RightArrow;
-				}
+			switch (this.mGame.AIMoveSuggestion) {
+			case GameMove.Up: return ConsoleKey.UpArrow;
+			case GameMove.Down: return ConsoleKey.DownArrow;
+			case GameMove.Left: return ConsoleKey.LeftArrow;
+			case GameMove.Right: return ConsoleKey.RightArrow;
+			default: return ConsoleKey.Q;
 			}
-
-			// OK no compaction options, so run basic random selection process.
-			int options = mLastMoveOk ? 4 : 3;  // 4 or 3 to guess from.
-			pick = new Random().Next(options);
-			GameMove[] moveSelection = { GameMove.Up, GameMove.Down, GameMove.Left, GameMove.Right };
-
-			short cnt = -1;
-			foreach (GameMove move in moveSelection) {
-				if (!mLastMoveOk && mLastMove == move) continue;
-				if (++cnt != pick) continue;
-				switch (move) {
-				case GameMove.Up: return ConsoleKey.UpArrow;
-				case GameMove.Down: return ConsoleKey.DownArrow;
-				case GameMove.Left: return ConsoleKey.LeftArrow;
-				case GameMove.Right: return ConsoleKey.RightArrow;
-				}
-				break;
-			}
-			return ConsoleKey.Q;
 		}
-
 
 		// Implemented example use ofTZFE Interface Methods
 		// Implemented example use ofTZFE Interface Methods

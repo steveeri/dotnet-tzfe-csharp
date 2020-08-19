@@ -185,6 +185,43 @@ namespace tzfeGameEngine {
 			return false;
 		}
 
+		// This method will do a simple calculation to programmatically guess the next best move.
+		// It is pretty basic AI logic - but suitable enough to help test your app, or offer hints to Users.
+		public GameMove AIMoveSuggestion {
+			get {
+				int pick; // reuseable selection variable.
+
+				// Assess conditions to maximise compaction of tiles.
+				int compactsUpDown = CompactVerticallyHint.factor;
+				int compactsLeftRight = CompactHorizontallyHint.factor;
+
+				if (compactsUpDown > 0 || compactsLeftRight > 0) {
+					pick = new Random().Next(2);
+					if (compactsUpDown > compactsLeftRight) {
+						return (pick > 0) ? GameMove.Up : GameMove.Down;
+					} else {
+						return (pick > 0) ? GameMove.Left : GameMove.Right;
+					}
+				}
+
+				bool lastMoveOK = this.mPreviousMoves[0] == null || this.mPreviousMoves[0].mMoveSuccess;
+				GameMove lastMove = this.mPreviousMoves[0] != null ? this.mPreviousMoves[0].mMove : GameMove.New;
+
+				// OK no compaction options, so run basic random selection process.
+				int options = lastMoveOK ? 4 : 3;  // 4 or 3 to guess from.
+				pick = new Random().Next(options);
+				GameMove[] moveSelection = { GameMove.Up, GameMove.Down, GameMove.Left, GameMove.Right };
+
+				short cnt = 0;
+				foreach (GameMove move in moveSelection) {
+					if (!lastMoveOK && lastMove == move) continue;
+					if (cnt++ != pick) continue;
+					return move;
+				}
+				return GameMove.New;
+			}
+		}
+
 		// Check up-down for compact moves remaining. 
 		// Returns tuple of count and scale of compaction.
 		public (int cnt, int factor) CompactVerticallyHint {
@@ -224,11 +261,13 @@ namespace tzfeGameEngine {
 		}
 
 		// Determine if any move conditions remain.
-		public bool HasMovesRemaining() {
-			if (mNumEmpty > 0) return true;
-			if (CompactVerticallyHint.cnt > 0) return true;
-			if (CompactHorizontallyHint.cnt > 0) return true;
-			return false;
+		public bool HasMovesRemaining {
+			get {
+				if (mNumEmpty > 0) return true;
+				if (CompactVerticallyHint.cnt > 0) return true;
+				if (CompactHorizontallyHint.cnt > 0) return true;
+				return false;
+			}
 		}
 
 		// THIS FUNCTION IS THE MAIN CONTROLLER FOR GAME MOVES
@@ -279,7 +318,7 @@ namespace tzfeGameEngine {
 			}
 
 			// Check to see if run out of moves => Report state to delegate.
-			if (!HasMovesRemaining()) {
+			if (!HasMovesRemaining) {
 				if (mMaxTile >= mWinTarget) {
 					mGameDelegate.UserWin();
 				} else {
